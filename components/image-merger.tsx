@@ -7,34 +7,69 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Download, Upload, X } from "lucide-react"
+import { Slider } from "@/components/ui/slider"
+import { Download, Upload, X, GripVertical, Trash2 } from "lucide-react"
 
 interface ImageMergerProps {
   onBack: () => void
 }
 
-type MergeLayout = "horizontal" | "vertical" | "grid"
+interface MergeImage {
+  img: HTMLImageElement
+  id: string
+  name: string
+}
+
+type MergeLayout = "horizontal" | "vertical" | "grid" | "grid3x3"
 
 export default function ImageMerger({ onBack }: ImageMergerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [images, setImages] = useState<HTMLImageElement[]>([])
+  const [images, setImages] = useState<MergeImage[]>([])
   const [layout, setLayout] = useState<MergeLayout>("horizontal")
   const [spacing, setSpacing] = useState(10)
+  const [backgroundColor, setBackgroundColor] = useState("#ffffff")
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
 
     files.forEach((file) => {
       const img = new Image()
+      img.crossOrigin = "anonymous"
       img.onload = () => {
-        setImages((prev) => [...prev, img])
+        setImages((prev) => [
+          ...prev,
+          {
+            img,
+            id: Math.random().toString(36).substr(2, 9),
+            name: file.name,
+          },
+        ])
       }
       img.src = URL.createObjectURL(file)
     })
   }
 
-  const removeImage = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index))
+  const removeImage = (id: string) => {
+    setImages((prev) => prev.filter((img) => img.id !== id))
+  }
+
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index)
+  }
+
+  const handleDragOver = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault()
+    if (draggedIndex === null || draggedIndex === targetIndex) return
+
+    const newImages = [...images]
+    ;[newImages[draggedIndex], newImages[targetIndex]] = [newImages[targetIndex], newImages[draggedIndex]]
+    setImages(newImages)
+    setDraggedIndex(targetIndex)
+  }
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null)
   }
 
   useEffect(() => {
@@ -46,52 +81,63 @@ export default function ImageMerger({ onBack }: ImageMergerProps) {
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
-    // Calculate dimensions based on layout
     let totalWidth = 0
     let totalHeight = 0
+    const imageData = images.map((m) => m.img)
 
     if (layout === "horizontal") {
-      totalWidth = images.reduce((sum, img) => sum + img.width + spacing, -spacing)
-      totalHeight = Math.max(...images.map((img) => img.height))
+      totalWidth = imageData.reduce((sum, img) => sum + img.width + spacing, -spacing)
+      totalHeight = Math.max(...imageData.map((img) => img.height))
     } else if (layout === "vertical") {
-      totalWidth = Math.max(...images.map((img) => img.width))
-      totalHeight = images.reduce((sum, img) => sum + img.height + spacing, -spacing)
-    } else {
-      // Grid layout (2 columns)
+      totalWidth = Math.max(...imageData.map((img) => img.width))
+      totalHeight = imageData.reduce((sum, img) => sum + img.height + spacing, -spacing)
+    } else if (layout === "grid") {
       const cols = 2
-      const rows = Math.ceil(images.length / cols)
-      totalWidth = Math.max(...images.map((img) => img.width)) * cols + spacing * (cols - 1)
-      totalHeight = Math.max(...images.map((img) => img.height)) * rows + spacing * (rows - 1)
+      const rows = Math.ceil(imageData.length / cols)
+      const maxWidth = Math.max(...imageData.map((img) => img.width))
+      const maxHeight = Math.max(...imageData.map((img) => img.height))
+      totalWidth = maxWidth * cols + spacing * (cols - 1)
+      totalHeight = maxHeight * rows + spacing * (rows - 1)
+    } else if (layout === "grid3x3") {
+      const cols = 3
+      const rows = Math.ceil(imageData.length / cols)
+      const maxWidth = Math.max(...imageData.map((img) => img.width))
+      const maxHeight = Math.max(...imageData.map((img) => img.height))
+      totalWidth = maxWidth * cols + spacing * (cols - 1)
+      totalHeight = maxHeight * rows + spacing * (rows - 1)
     }
 
     canvas.width = totalWidth
     canvas.height = totalHeight
 
-    // Clear canvas
-    ctx.fillStyle = "#ffffff"
+    ctx.fillStyle = backgroundColor
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-    // Draw images
     let x = 0
     let y = 0
 
-    images.forEach((img, index) => {
+    imageData.forEach((img, index) => {
       if (layout === "horizontal") {
         ctx.drawImage(img, x, 0, img.width, img.height)
         x += img.width + spacing
       } else if (layout === "vertical") {
         ctx.drawImage(img, 0, y, img.width, img.height)
         y += img.height + spacing
-      } else {
-        // Grid layout
+      } else if (layout === "grid") {
         const col = index % 2
         const row = Math.floor(index / 2)
-        const maxWidth = Math.max(...images.map((img) => img.width))
-        const maxHeight = Math.max(...images.map((img) => img.height))
+        const maxWidth = Math.max(...imageData.map((img) => img.width))
+        const maxHeight = Math.max(...imageData.map((img) => img.height))
+        ctx.drawImage(img, col * (maxWidth + spacing), row * (maxHeight + spacing), img.width, img.height)
+      } else if (layout === "grid3x3") {
+        const col = index % 3
+        const row = Math.floor(index / 3)
+        const maxWidth = Math.max(...imageData.map((img) => img.width))
+        const maxHeight = Math.max(...imageData.map((img) => img.height))
         ctx.drawImage(img, col * (maxWidth + spacing), row * (maxHeight + spacing), img.width, img.height)
       }
     })
-  }, [images, layout, spacing])
+  }, [images, layout, spacing, backgroundColor])
 
   const handleDownload = () => {
     const canvas = canvasRef.current
@@ -109,6 +155,10 @@ export default function ImageMerger({ onBack }: ImageMergerProps) {
       document.body.removeChild(link)
       URL.revokeObjectURL(url)
     }, "image/png")
+  }
+
+  const clearAll = () => {
+    setImages([])
   }
 
   return (
@@ -162,22 +212,60 @@ export default function ImageMerger({ onBack }: ImageMergerProps) {
                 <SelectContent>
                   <SelectItem value="horizontal">অনুভূমিক (Horizontal)</SelectItem>
                   <SelectItem value="vertical">উল্লম্ব (Vertical)</SelectItem>
-                  <SelectItem value="grid">গ্রিড (Grid 2x2)</SelectItem>
+                  <SelectItem value="grid">গ্রিড ২x২ (Grid 2x2)</SelectItem>
+                  <SelectItem value="grid3x3">গ্রিড ৩x৩ (Grid 3x3)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            {/* Image List */}
+            <div className="space-y-2">
+              <Label>মধ্যবর্তী দূরত্ব (Spacing): {spacing}px</Label>
+              <Slider value={[spacing]} onValueChange={(v) => setSpacing(v[0])} min={0} max={50} step={1} />
+            </div>
+
+            <div className="space-y-2">
+              <Label>পটভূমি রঙ (Background Color)</Label>
+              <div className="flex gap-2">
+                <input
+                  type="color"
+                  value={backgroundColor}
+                  onChange={(e) => setBackgroundColor(e.target.value)}
+                  className="h-10 w-16 rounded cursor-pointer"
+                />
+                <span className="text-sm text-muted-foreground self-center">{backgroundColor}</span>
+              </div>
+            </div>
+
+            {/* Image List with Drag Reordering */}
             {images.length > 0 && (
               <div className="space-y-2">
-                <Label>যোগ করা ছবি ({images.length})</Label>
+                <div className="flex items-center justify-between">
+                  <Label>যোগ করা ছবি ({images.length})</Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearAll}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    সব মুছুন (Clear)
+                  </Button>
+                </div>
                 <div className="space-y-2 max-h-40 overflow-y-auto">
                   {images.map((img, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
-                      <span className="text-sm">
-                        Image {index + 1} ({img.width}x{img.height})
+                    <div
+                      key={img.id}
+                      draggable
+                      onDragStart={() => handleDragStart(index)}
+                      onDragOver={(e) => handleDragOver(e, index)}
+                      onDragEnd={handleDragEnd}
+                      className="flex items-center gap-2 p-2 bg-muted rounded cursor-move hover:bg-muted/80 transition-colors"
+                    >
+                      <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <span className="text-sm flex-1 truncate">
+                        {index + 1}. {img.name}
                       </span>
-                      <Button variant="ghost" size="sm" onClick={() => removeImage(index)}>
+                      <Button variant="ghost" size="sm" onClick={() => removeImage(img.id)}>
                         <X className="h-4 w-4" />
                       </Button>
                     </div>
@@ -189,7 +277,7 @@ export default function ImageMerger({ onBack }: ImageMergerProps) {
 
           <Button onClick={handleDownload} disabled={images.length === 0} className="w-full" size="lg">
             <Download className="mr-2 h-5 w-5" />
-            ডাউনলোড করুন (Download Merged Image)
+            মার্জ ও ডাউনলোড করুন (Download Merged Image)
           </Button>
         </Card>
       </div>

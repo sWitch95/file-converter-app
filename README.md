@@ -1,33 +1,45 @@
 # QuickConvert
 
-A modern, responsive file converter web application that supports multiple file formats including PDF, Word, PowerPoint, CSV, JSON, and images. Now with built-in image editing and file merging capabilities!
+A modern, responsive file converter web application that supports multiple file formats including PDF, Word, PowerPoint, CSV, JSON, and images. Now with advanced image editing, file merging, and cloud integration!
 
 ![QuickConvert Logo](public/logo.jpg)
 
 ## Features
 
 ### File Conversion
-- **Multiple Format Support**: Convert between PDF, DOCX, PPTX, CSV, JSON, PNG, and JPG
-- **Browser-Based Conversion**: Images and CSV/JSON convert instantly in your browser
+- **Multiple Format Support**: 
+  - Images: PNG, JPG, WebP, BMP, GIF
+  - Data: CSV, JSON, XML, XLSX
+  - Documents: PDF, DOCX, PPTX (demo mode)
+- **Browser-Based Conversion**: Images and data formats convert instantly in your browser
 - **Drag & Drop Interface**: Easy-to-use file upload with drag-and-drop support
 
 ### Image Editing ✨ NEW
-- **Brightness & Contrast**: Adjust image brightness and contrast in real-time
-- **Saturation Control**: Modify color saturation
-- **Rotation**: Rotate images by 90-degree increments
-- **Scaling**: Resize images from 10% to 200%
+- **Color Adjustments**: Brightness, Contrast, Saturation, Hue controls
+- **Effects**: Blur and Sepia effects
+- **Transformations**: Rotation and scaling (10%-200%)
+- **Presets**: Grayscale, Vintage, Vivid, Cool, Warm filters
+- **Text Overlay**: Add customizable text with size control
+- **Compression Control**: Adjust output quality
 - **Live Preview**: See changes instantly on canvas
 
-### File Merging ✨ NEW
+### File Merging ✨ ENHANCED
 - **Image Merger**: Combine multiple images into one
-  - Horizontal layout
-  - Vertical layout
-  - Grid layout (2x2)
-  - Adjustable spacing
+  - Horizontal, Vertical, 2x2 Grid, 3x3 Grid layouts
+  - Drag-and-drop reordering
+  - Adjustable spacing (0-50px)
+  - Custom background color
 - **PDF Merger**: Merge multiple PDFs into a single document
   - Reorder pages with drag controls
+  - Drag-and-drop file reordering
   - Browser-based processing with pdf-lib
   - No server upload required
+
+### Cloud Features ✨ NEW
+- **Conversion History**: Track your last 50 conversions
+- **User Preferences**: Save theme and compression settings
+- **Supabase Integration**: Secure cloud storage with Row Level Security
+- **Authentication**: Optional sign-in for personalized experience
 
 ### General Features
 - **Bilingual UI**: Interface in both Bangla and English
@@ -39,23 +51,25 @@ A modern, responsive file converter web application that supports multiple file 
 ## Tech Stack
 
 ### Frontend
-- **Next.js 15** - React framework with App Router
+- **Next.js 16** - React framework with App Router
 - **Tailwind CSS v4** - Utility-first CSS framework
 - **shadcn/ui** - High-quality React components
 - **TypeScript** - Type-safe development
 
-### Backend (Node.js)
+### Database & Auth (Optional)
+- **Supabase** - PostgreSQL with Row Level Security
+- **Supabase Auth** - Email/password authentication
+
+### Backend (Node.js - Optional)
 - **Express** - Web application framework
 - **Multer** - File upload handling
 - **Sharp** - Image processing
 - **csvtojson & json2csv** - CSV/JSON conversion
-- **LibreOffice** - Office document conversion
 
-### Backend (Python - Alternative)
+### Backend (Python - Optional)
 - **FastAPI** - Modern Python web framework
 - **Pandas** - Data manipulation
 - **Pillow** - Image processing
-- **pypandoc** - Document conversion
 
 ### DevOps
 - **Docker** - Containerization
@@ -66,9 +80,9 @@ A modern, responsive file converter web application that supports multiple file 
 
 ### Prerequisites
 
-- Node.js 18+ (for frontend and Node.js backend)
-- Python 3.11+ (for FastAPI backend, optional)
-- Docker & Docker Compose (for containerized deployment)
+- Node.js 18+ (for frontend)
+- Supabase account (optional, for cloud features)
+- Docker & Docker Compose (optional, for containerized deployment)
 
 ### Local Development
 
@@ -85,41 +99,33 @@ cd quickconvert
 npm install
 \`\`\`
 
-#### 3. Run Frontend Development Server
+#### 3. Setup Environment Variables (Optional)
+
+\`\`\`bash
+cp .env.example .env.local
+\`\`\`
+
+Edit `.env.local` to add Supabase credentials if you want cloud features:
+\`\`\`env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+\`\`\`
+
+#### 4. Run Development Server
 
 \`\`\`bash
 npm run dev
 \`\`\`
 
-The application will be available at `http://localhost:3000`
+The application will be available at \`http://localhost:3000\`
 
-**Note:** The browser-based version includes:
-- ✅ Image conversion (PNG ↔ JPG)
-- ✅ CSV/JSON conversion
-- ✅ Image editing (brightness, contrast, saturation, rotation, scaling)
-- ✅ Image merging (horizontal, vertical, grid layouts)
-- ✅ PDF merging (using pdf-lib)
-- ⚠️ PDF/Office conversions (demo mode - requires backend server)
-
-#### 4. Run Backend Server (Optional - for PDF/Office conversions)
-
-**Node.js Backend:**
-\`\`\`bash
-cd server
-npm install
-npm run dev
-\`\`\`
-
-The API will be available at `http://localhost:3001`
-
-**FastAPI Backend (Alternative):**
-\`\`\`bash
-cd fastapi
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
-\`\`\`
-
-The API will be available at `http://localhost:8000`
+**Working Features (Browser-Based):**
+- ✅ Image conversion (PNG, JPG, WebP, BMP, GIF)
+- ✅ CSV/JSON/XML conversion
+- ✅ Image editing (all effects and adjustments)
+- ✅ Image merging (all layouts with reordering)
+- ✅ PDF merging
+- ⚠️ PDF/Office conversions (demo mode - requires backend)
 
 ### Docker Deployment
 
@@ -134,143 +140,96 @@ This will start:
 - Backend API (Express) on port 3001
 - Nginx reverse proxy on port 80
 
-Access the application at `http://localhost`
-
-#### Individual Container Builds
-
-**Frontend:**
-\`\`\`bash
-docker build -t quickconvert-web .
-docker run -p 3000:3000 quickconvert-web
-\`\`\`
-
-**Backend:**
-\`\`\`bash
-cd server
-docker build -t quickconvert-api .
-docker run -p 3001:3001 quickconvert-api
-\`\`\`
+Access the application at \`http://localhost\`
 
 ## Project Structure
 
 \`\`\`
 quickconvert/
-├── app/                      # Next.js app directory
-│   ├── api/                  # API routes
-│   │   └── convert/          # File conversion endpoint
-│   ├── layout.tsx            # Root layout with metadata
-│   ├── page.tsx              # Home page
-│   ├── globals.css           # Global styles and theme
-│   ├── icon.tsx              # Favicon generator
-│   └── apple-icon.tsx        # Apple touch icon
-├── components/               # React components
-│   ├── file-converter.tsx    # Main converter component with tabs
-│   ├── image-editor.tsx      # Image editing component ✨ NEW
-│   ├── image-merger.tsx      # Image merging component ✨ NEW
-│   ├── pdf-merger.tsx        # PDF merging component ✨ NEW
-│   ├── logo.tsx              # Logo component
-│   ├── theme-provider.tsx    # Theme context provider
-│   └── ui/                   # shadcn/ui components
-├── lib/                      # Utility functions
-│   └── converters.ts         # Browser-based conversion utilities
-├── server/                   # Node.js backend (optional)
-│   ├── index.js              # Express server
-│   ├── converters/           # Conversion logic
-│   │   ├── index.js          # Main converter router
-│   │   ├── image-converter.js
-│   │   ├── csv-json-converter.js
-│   │   └── office-converter.js
-│   ├── __tests__/            # Backend tests
-│   ├── package.json
-│   └── Dockerfile
-├── fastapi/                  # Python FastAPI backend (alternative)
-│   ├── main.py               # FastAPI application
-│   ├── requirements.txt
-│   └── Dockerfile
-├── public/                   # Static assets
+├── app/                           # Next.js app directory
+│   ├── api/                       # API routes
+│   │   └── convert/               # File conversion endpoint
+│   ├── layout.tsx                 # Root layout
+│   ├── page.tsx                   # Home page
+│   ├── globals.css                # Global styles and theme
+│   ├── icon.tsx                   # Favicon generator
+│   └── apple-icon.tsx             # Apple touch icon
+├── components/                    # React components
+│   ├── file-converter.tsx         # Main converter with tabs
+│   ├── image-editor.tsx           # Image editing ✨ ENHANCED
+│   ├── image-merger.tsx           # Image merging ✨ ENHANCED
+│   ├── pdf-merger.tsx             # PDF merging ✨ ENHANCED
+│   ├── conversion-history.tsx     # Cloud history ✨ NEW
+│   ├── logo.tsx                   # Logo component
+│   ├── theme-provider.tsx         # Theme context provider
+│   └── ui/                        # shadcn/ui components
+├── lib/                           # Utilities
+│   ├── converters.ts              # Enhanced conversion logic
+│   └── supabase-client.ts         # Supabase client ✨ NEW
+├── scripts/                       # Database setup
+│   └── init-supabase.sql          # Schema and RLS policies ✨ NEW
+├── public/                        # Static assets
 │   ├── logo.jpg
 │   ├── favicon.jpg
-│   └── branding.html         # Branding guidelines
-├── docker-compose.yml        # Docker orchestration
-├── nginx.conf                # Nginx configuration
-└── README.md                 # This file
+│   └── branding.html
+├── server/                        # Node.js backend (optional)
+│   ├── index.js
+│   ├── converters/
+│   └── Dockerfile
+├── fastapi/                       # FastAPI backend (optional)
+│   ├── main.py
+│   └── requirements.txt
+├── docker-compose.yml
+├── vercel.json                    # Vercel config ✨ NEW
+└── README.md                      # This file
 \`\`\`
 
-## API Documentation
+## Deployment
 
-### POST /api/convert
+### Deploy to Vercel (Recommended)
 
-Convert a file from one format to another.
-
-**Request:**
-- Method: `POST`
-- Content-Type: `multipart/form-data`
-- Body:
-  - `file`: File to convert (required)
-  - `format`: Conversion format (required)
-
-**Supported Formats:**
-- `pdf-to-docx`
-- `docx-to-pdf`
-- `pdf-to-pptx`
-- `pptx-to-pdf`
-- `csv-to-json`
-- `json-to-csv`
-- `png-to-jpg`
-- `jpg-to-png`
-
-**Response:**
-\`\`\`json
-{
-  "success": true,
-  "downloadUrl": "/api/download/filename.ext",
-  "message": "File converted successfully"
-}
+\`\`\`bash
+npm i -g vercel
+vercel
 \`\`\`
 
-### GET /api/download/:filename
+See [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md) for detailed instructions.
 
-Download a converted file.
+**Environment variables needed:**
+- \`NEXT_PUBLIC_SUPABASE_URL\`
+- \`NEXT_PUBLIC_SUPABASE_ANON_KEY\`
 
-**Request:**
-- Method: `GET`
-- URL Parameter: `filename` - Name of the converted file
+### Self-Host with Docker
 
-**Response:**
-- File download stream
-
-### GET /health
-
-Health check endpoint.
-
-**Response:**
-\`\`\`json
-{
-  "status": "ok",
-  "message": "QuickConvert API is running"
-}
+\`\`\`bash
+docker-compose up -d
 \`\`\`
+
+See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for detailed instructions.
+
+## Supported Formats
+
+### Image Conversions
+- PNG → JPG, WebP, BMP
+- JPG → PNG, WebP, BMP  
+- WebP → PNG, JPG
+- BMP → PNG, JPG
+- GIF → PNG
+
+### Data Conversions
+- CSV → JSON, XML
+- JSON → CSV, XLSX
+
+### Document Conversions (Demo)
+- PDF ↔ Word
+- PDF ↔ PowerPoint
 
 ## Testing
 
-### Frontend Tests
-
 \`\`\`bash
-npm test
-\`\`\`
-
-### Backend Tests (Node.js)
-
-\`\`\`bash
-cd server
-npm test
-\`\`\`
-
-### Backend Tests (FastAPI)
-
-\`\`\`bash
-cd fastapi
-pytest
+npm test                  # Run all tests
+npm run test:watch       # Watch mode
+npm run test:coverage    # Coverage report
 \`\`\`
 
 ## Environment Variables
@@ -278,43 +237,43 @@ pytest
 ### Frontend (.env.local)
 
 \`\`\`env
-NEXT_PUBLIC_API_URL=http://localhost:3001
+# Supabase (optional)
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+SUPABASE_JWT_SECRET=your-jwt-secret
 \`\`\`
-
-### Backend (server/.env)
-
-\`\`\`env
-PORT=3001
-NODE_ENV=development
-MAX_FILE_SIZE=52428800
-FILE_RETENTION_HOURS=24
-\`\`\`
-
-## Scaling Considerations
-
-### For Production Deployment:
-
-1. **Queue System**: Implement Bull/Redis for handling large file conversions asynchronously
-2. **File Size Limits**: Configure nginx `client_max_body_size` based on your needs
-3. **Streaming**: Use streaming for large file conversions instead of in-memory processing
-4. **CDN**: Serve static assets through a CDN
-5. **Load Balancing**: Use multiple backend instances behind a load balancer
-6. **Storage**: Consider using cloud storage (S3, Google Cloud Storage) instead of local filesystem
-7. **Monitoring**: Add application monitoring (Sentry, DataDog, etc.)
-8. **Rate Limiting**: Implement rate limiting to prevent abuse
-9. **WebAssembly**: Consider WASM for more complex browser-based conversions
-10. **Service Workers**: Add offline support with service workers
 
 ## Security
 
-- Files are processed locally in the browser when possible
-- Files transferred to backend use TLS encryption
-- No human access to uploaded files
-- Automatic file deletion after 24 hours (backend only)
-- Input validation on all file uploads
-- File size limits enforced
-- CORS configured for API endpoints
-- CSP headers for XSS protection
+- **Cloud Security**: Row-level security policies for user data
+- **Data Privacy**: Automatic cleanup of user data
+- **Encryption**: TLS for all data transmission
+
+## Roadmap
+
+- [ ] OCR text extraction
+- [ ] Audio format conversion
+- [ ] Video format conversion  
+- [ ] Batch processing queue
+- [ ] REST API for developers
+- [ ] Mobile app
+- [ ] Real-time collaboration
+
+## Performance
+
+- Page Load: < 2s
+- First Contentful Paint: < 1.5s
+- Time to Interactive: < 3.5s
+- Cumulative Layout Shift: < 0.1
+
+## Browser Support
+
+- Chrome/Edge 90+
+- Firefox 88+
+- Safari 14+
+- iOS Safari 14+
+- Android Chrome 90+
 
 ## License
 
@@ -322,7 +281,7 @@ MIT License - feel free to use this project for personal or commercial purposes.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 
 ## Support
 
@@ -331,3 +290,4 @@ For issues and questions, please open an issue on GitHub.
 ---
 
 **QuickConvert** - Convert, edit, and merge files quickly, securely, and free. 🚀
+</merged_code

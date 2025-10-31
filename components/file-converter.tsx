@@ -25,6 +25,16 @@ type ConversionFormat =
   | "json-to-csv"
   | "png-to-jpg"
   | "jpg-to-png"
+  | "png-to-webp"
+  | "png-to-bmp"
+  | "jpg-to-webp"
+  | "webp-to-png"
+  | "webp-to-jpg"
+  | "bmp-to-png"
+  | "bmp-to-jpg"
+  | "gif-to-png"
+  | "csv-to-xml"
+  | "json-to-xlsx"
 
 type ConversionState = "idle" | "uploading" | "converting" | "success" | "error"
 
@@ -43,14 +53,27 @@ export default function FileConverter() {
   const { theme, setTheme } = useTheme()
 
   const formatOptions = [
-    { value: "png-to-jpg", label: "PNG → JPG", available: true },
-    { value: "jpg-to-png", label: "JPG → PNG", available: true },
-    { value: "csv-to-json", label: "CSV → JSON", available: true },
-    { value: "json-to-csv", label: "JSON → CSV", available: true },
-    { value: "pdf-to-docx", label: "PDF → Word (Demo)", available: false },
-    { value: "docx-to-pdf", label: "Word → PDF (Demo)", available: false },
-    { value: "pdf-to-pptx", label: "PDF → PowerPoint (Demo)", available: false },
-    { value: "pptx-to-pdf", label: "PowerPoint → PDF (Demo)", available: false },
+    // Image conversions
+    { category: "Image Conversions", value: "png-to-jpg", label: "PNG → JPG", available: true },
+    { category: "Image Conversions", value: "jpg-to-png", label: "JPG → PNG", available: true },
+    { category: "Image Conversions", value: "png-to-webp", label: "PNG → WebP", available: true },
+    { category: "Image Conversions", value: "jpg-to-webp", label: "JPG → WebP", available: true },
+    { category: "Image Conversions", value: "webp-to-png", label: "WebP → PNG", available: true },
+    { category: "Image Conversions", value: "webp-to-jpg", label: "WebP → JPG", available: true },
+    { category: "Image Conversions", value: "png-to-bmp", label: "PNG → BMP", available: true },
+    { category: "Image Conversions", value: "bmp-to-png", label: "BMP → PNG", available: true },
+    { category: "Image Conversions", value: "bmp-to-jpg", label: "BMP → JPG", available: true },
+    { category: "Image Conversions", value: "gif-to-png", label: "GIF → PNG", available: true },
+    // Data conversions
+    { category: "Data Conversions", value: "csv-to-json", label: "CSV → JSON", available: true },
+    { category: "Data Conversions", value: "json-to-csv", label: "JSON → CSV", available: true },
+    { category: "Data Conversions", value: "csv-to-xml", label: "CSV → XML", available: true },
+    { category: "Data Conversions", value: "json-to-xlsx", label: "JSON → XLSX", available: true },
+    // Office conversions (demo)
+    { category: "Office (Demo)", value: "pdf-to-docx", label: "PDF → Word", available: false },
+    { category: "Office (Demo)", value: "docx-to-pdf", label: "Word → PDF", available: false },
+    { category: "Office (Demo)", value: "pdf-to-pptx", label: "PDF → PowerPoint", available: false },
+    { category: "Office (Demo)", value: "pptx-to-pdf", label: "PowerPoint → PDF", available: false },
   ]
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -106,16 +129,33 @@ export default function FileConverter() {
 
       let convertedBlob: Blob | null = null
 
-      // Handle client-side conversions
-      if (format === "png-to-jpg" || format === "jpg-to-png") {
-        const targetFormat = format === "png-to-jpg" ? "jpg" : "png"
-        convertedBlob = await convertImage(file, targetFormat)
+      const imageFormats = [
+        "png-to-jpg",
+        "jpg-to-png",
+        "png-to-webp",
+        "jpg-to-webp",
+        "webp-to-png",
+        "webp-to-jpg",
+        "png-to-bmp",
+        "bmp-to-png",
+        "bmp-to-jpg",
+        "gif-to-png",
+      ]
+
+      if (imageFormats.includes(format)) {
+        const [sourceFormat, targetFormat] = format.split("-to-") as [string, string]
+        convertedBlob = await convertImage(file, targetFormat as "jpg" | "png" | "webp" | "bmp" | "gif")
       } else if (format === "csv-to-json") {
         convertedBlob = await csvToJson(file)
       } else if (format === "json-to-csv") {
         convertedBlob = await jsonToCsv(file)
+      } else if (format === "csv-to-xml") {
+        const { csvToXml } = await import("@/lib/converters")
+        convertedBlob = await csvToXml(file)
+      } else if (format === "json-to-xlsx") {
+        const { jsonToXlsx } = await import("@/lib/converters")
+        convertedBlob = await jsonToXlsx(file)
       } else {
-        // PDF/Office conversions - demo mode
         setIsDemo(true)
         setProgress(100)
         setState("success")
@@ -123,7 +163,6 @@ export default function FileConverter() {
       }
 
       if (convertedBlob) {
-        // Create download URL
         const url = URL.createObjectURL(convertedBlob)
         const outputFilename = getOutputFilename(file.name, format)
 
@@ -131,7 +170,6 @@ export default function FileConverter() {
         setState("success")
         setDownloadUrl(url)
 
-        // Trigger automatic download
         const link = document.createElement("a")
         link.href = url
         link.download = outputFilename
@@ -235,10 +273,19 @@ export default function FileConverter() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {formatOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
+                    {Array.from(new Set(formatOptions.map((o) => o.category))).map((category) => (
+                      <div key={category}>
+                        <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground sticky top-0 bg-background">
+                          {category}
+                        </div>
+                        {formatOptions
+                          .filter((o) => o.category === category)
+                          .map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                      </div>
                     ))}
                   </SelectContent>
                 </Select>

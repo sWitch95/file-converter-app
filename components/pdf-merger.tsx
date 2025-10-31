@@ -6,7 +6,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import { Download, Upload, X, FileText, ArrowUp, ArrowDown } from "lucide-react"
+import { Download, Upload, X, FileText, ArrowUp, ArrowDown, Trash2 } from "lucide-react"
 
 interface PDFMergerProps {
   onBack: () => void
@@ -19,6 +19,7 @@ interface PDFFile {
 
 export default function PDFMerger({ onBack }: PDFMergerProps) {
   const [pdfFiles, setPdfFiles] = useState<PDFFile[]>([])
+  const [draggedId, setDraggedId] = useState<string | null>(null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
@@ -50,6 +51,26 @@ export default function PDFMerger({ onBack }: PDFMergerProps) {
     setPdfFiles(newFiles)
   }
 
+  const handleDragStart = (id: string) => {
+    setDraggedId(id)
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+  }
+
+  const handleDrop = (targetId: string) => {
+    if (!draggedId || draggedId === targetId) return
+
+    const draggedIndex = pdfFiles.findIndex((p) => p.id === draggedId)
+    const targetIndex = pdfFiles.findIndex((p) => p.id === targetId)
+
+    const newFiles = [...pdfFiles]
+    ;[newFiles[draggedIndex], newFiles[targetIndex]] = [newFiles[targetIndex], newFiles[draggedIndex]]
+    setPdfFiles(newFiles)
+    setDraggedId(null)
+  }
+
   const handleMerge = async () => {
     if (pdfFiles.length < 2) {
       alert("অন্তত দুটি PDF ফাইল যোগ করুন (Please add at least 2 PDF files)")
@@ -57,7 +78,6 @@ export default function PDFMerger({ onBack }: PDFMergerProps) {
     }
 
     try {
-      // Dynamic import of pdf-lib
       const { PDFDocument } = await import("pdf-lib")
 
       const mergedPdf = await PDFDocument.create()
@@ -84,6 +104,10 @@ export default function PDFMerger({ onBack }: PDFMergerProps) {
       console.error("[v0] PDF merge error:", error)
       alert("PDF মার্জ করতে সমস্যা হয়েছে (Error merging PDFs)")
     }
+  }
+
+  const clearAll = () => {
+    setPdfFiles([])
   }
 
   return (
@@ -118,10 +142,28 @@ export default function PDFMerger({ onBack }: PDFMergerProps) {
 
           {pdfFiles.length > 0 && (
             <div className="space-y-2">
-              <Label>যোগ করা PDF ({pdfFiles.length})</Label>
+              <div className="flex items-center justify-between">
+                <Label>যোগ করা PDF ({pdfFiles.length})</Label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearAll}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  সব মুছুন
+                </Button>
+              </div>
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {pdfFiles.map((pdf, index) => (
-                  <div key={pdf.id} className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                  <div
+                    key={pdf.id}
+                    draggable
+                    onDragStart={() => handleDragStart(pdf.id)}
+                    onDragOver={handleDragOver}
+                    onDrop={() => handleDrop(pdf.id)}
+                    className="flex items-center gap-2 p-3 bg-muted rounded-lg hover:bg-muted/80 transition-colors cursor-move"
+                  >
                     <FileText className="h-5 w-5 text-primary flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{pdf.file.name}</p>
@@ -157,7 +199,7 @@ export default function PDFMerger({ onBack }: PDFMergerProps) {
               <h3 className="font-semibold mb-2">কিভাবে ব্যবহার করবেন (How to Use)</h3>
               <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
                 <li>একাধিক PDF ফাইল নির্বাচন করুন (Select multiple PDF files)</li>
-                <li>তীর বোতাম দিয়ে ক্রম পরিবর্তন করুন (Reorder using arrow buttons)</li>
+                <li>ড্র্যাগ করে বা বাটন দিয়ে ক্রম পরিবর্তন করুন (Reorder by dragging or buttons)</li>
                 <li>মার্জ বোতামে ক্লিক করুন (Click merge button)</li>
                 <li>মার্জ করা PDF ডাউনলোড হবে (Merged PDF will download)</li>
               </ol>
