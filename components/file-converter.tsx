@@ -14,7 +14,7 @@ import Logo from "@/components/logo"
 import ImageEditor from "@/components/image-editor"
 import ImageMerger from "@/components/image-merger"
 import PDFMerger from "@/components/pdf-merger"
-import { convertImage, csvToJson, jsonToCsv, getOutputFilename } from "@/lib/converters"
+import { convertImage, csvToJson, jsonToCsv, getOutputFilename, convertOfficeToBackend } from "@/lib/converters"
 
 type ConversionFormat =
   | "pdf-to-docx"
@@ -35,6 +35,7 @@ type ConversionFormat =
   | "gif-to-png"
   | "csv-to-xml"
   | "json-to-xlsx"
+  | "pdf-to-text"
 
 type ConversionState = "idle" | "uploading" | "converting" | "success" | "error"
 
@@ -69,11 +70,21 @@ export default function FileConverter() {
     { category: "Data Conversions", value: "json-to-csv", label: "JSON → CSV", available: true },
     { category: "Data Conversions", value: "csv-to-xml", label: "CSV → XML", available: true },
     { category: "Data Conversions", value: "json-to-xlsx", label: "JSON → XLSX", available: true },
-    // Office conversions (demo)
-    { category: "Office (Demo)", value: "pdf-to-docx", label: "PDF → Word", available: false },
-    { category: "Office (Demo)", value: "docx-to-pdf", label: "Word → PDF", available: false },
-    { category: "Office (Demo)", value: "pdf-to-pptx", label: "PDF → PowerPoint", available: false },
-    { category: "Office (Demo)", value: "pptx-to-pdf", label: "PowerPoint → PDF", available: false },
+    { category: "Office Conversions", value: "pdf-to-text", label: "PDF → Text (Extract)", available: true },
+    { category: "Office Conversions", value: "pdf-to-docx", label: "PDF → Word (Real Conversion)", available: true },
+    { category: "Office Conversions", value: "docx-to-pdf", label: "Word → PDF (Real Conversion)", available: true },
+    {
+      category: "Office Conversions",
+      value: "pdf-to-pptx",
+      label: "PDF → PowerPoint (Real Conversion)",
+      available: true,
+    },
+    {
+      category: "Office Conversions",
+      value: "pptx-to-pdf",
+      label: "PowerPoint → PDF (Real Conversion)",
+      available: true,
+    },
   ]
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -142,6 +153,8 @@ export default function FileConverter() {
         "gif-to-png",
       ]
 
+      const officeFormats = ["pdf-to-docx", "docx-to-pdf", "pdf-to-pptx", "pptx-to-pdf"]
+
       if (imageFormats.includes(format)) {
         const [sourceFormat, targetFormat] = format.split("-to-") as [string, string]
         convertedBlob = await convertImage(file, targetFormat as "jpg" | "png" | "webp" | "bmp" | "gif")
@@ -155,11 +168,12 @@ export default function FileConverter() {
       } else if (format === "json-to-xlsx") {
         const { jsonToXlsx } = await import("@/lib/converters")
         convertedBlob = await jsonToXlsx(file)
-      } else {
-        setIsDemo(true)
-        setProgress(100)
-        setState("success")
-        return
+      } else if (format === "pdf-to-text") {
+        const { pdfToText } = await import("@/lib/converters")
+        convertedBlob = await pdfToText(file)
+      } else if (officeFormats.includes(format)) {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
+        convertedBlob = await convertOfficeToBackend(file, format, apiUrl)
       }
 
       if (convertedBlob) {
@@ -179,7 +193,12 @@ export default function FileConverter() {
       }
     } catch (err) {
       setState("error")
-      setError(err instanceof Error ? err.message : "An error occurred during conversion")
+      const errorMessage = err instanceof Error ? err.message : "An error occurred during conversion"
+      if (errorMessage.includes("Failed to fetch") || errorMessage.includes("NetworkError")) {
+        setError(`Backend server is not running. Please start the backend server first.\n\nRun: cd server && npm start`)
+      } else {
+        setError(errorMessage)
+      }
       setProgress(0)
     }
   }
@@ -345,7 +364,7 @@ export default function FileConverter() {
                   <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
                   <div className="flex-1">
                     <p className="font-medium text-destructive">Error</p>
-                    <p className="text-sm text-destructive/90">{error}</p>
+                    <p className="text-sm text-destructive/90 whitespace-pre-wrap">{error}</p>
                   </div>
                 </div>
               )}
@@ -475,10 +494,10 @@ export default function FileConverter() {
           {/* Privacy Notice */}
           <div className="pt-4 border-t border-border">
             <p className="text-sm text-muted-foreground text-center text-pretty">
-              🔒 সম্পূর্ণ ব্রাউজার-ভিত্তিক রূপান্তর। আপনার ফাইল কখনও সার্ভারে আপলোড হয় না।
+              🔒 ছবি এবং ডেটা কনভার্শন সম্পূর্ণ ব্রাউজার-ভিত্তিক। আপনার ফাইল কখনও সার্ভারে আপলোড হয় না।
             </p>
             <p className="text-xs text-muted-foreground text-center mt-2">
-              100% browser-based conversion. Your files never leave your device. Complete privacy guaranteed.
+              Images and data conversions are 100% browser-based. Office conversions use a secure backend API.
             </p>
           </div>
         </div>

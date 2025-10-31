@@ -79,6 +79,7 @@
     "node-notifier": "latest",
     "path": "latest",
     "pdf-lib": "latest",
+    "pdfjs-dist": "latest",
     "react": "^19",
     "react-day-picker": "latest",
     "react-dom": "^19",

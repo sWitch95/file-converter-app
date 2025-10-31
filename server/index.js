@@ -17,15 +17,54 @@ const app = express()
 const PORT = process.env.PORT || 3001
 
 // Middleware
-app.use(cors())
+const corsOptions = {
+  origin: (origin, callback) => {
+    // List of allowed origins
+    const allowedOrigins = [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "http://127.0.0.1:3000",
+      "http://127.0.0.1:3001",
+      "https://file-converter-app.vercel.app",
+      "https://*.vercel.app", // Allow all Vercel preview deployments
+    ]
+
+    // Also check environment variable for custom frontend URL
+    const customFrontendUrl = process.env.FRONTEND_URL
+    if (customFrontendUrl) {
+      allowedOrigins.push(customFrontendUrl)
+    }
+
+    // If no origin (mobile apps, Postman, etc.)
+    if (
+      !origin ||
+      allowedOrigins.some((allowed) => {
+        if (allowed.includes("*")) {
+          const pattern = new RegExp(allowed.replace(/\*/g, ".*"))
+          return pattern.test(origin)
+        }
+        return origin === allowed
+      })
+    ) {
+      callback(null, true)
+    } else {
+      callback(new Error("Not allowed by CORS"))
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}
+
+app.use(cors(corsOptions))
 app.use(express.json())
 
 // Create directories if they don't exist
 const UPLOAD_DIR = path.join(__dirname, "../tmp/uploads")
 const OUTPUT_DIR = path.join(__dirname, "../tmp/outputs")
 
-await fs.mkdir(UPLOAD_DIR, { recursive: true })
-await fs.mkdir(OUTPUT_DIR, { recursive: true })
+fs.mkdir(UPLOAD_DIR, { recursive: true })
+fs.mkdir(OUTPUT_DIR, { recursive: true })
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({

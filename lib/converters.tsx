@@ -144,6 +144,52 @@ export async function csvToXml(file: File): Promise<Blob> {
   return new Blob([xmlString], { type: "application/xml" })
 }
 
+export async function extractTextFromPDF(file: File): Promise<string> {
+  const { getDocument } = await import("pdfjs-dist")
+  const arrayBuffer = await file.arrayBuffer()
+
+  try {
+    const pdf = await getDocument({ data: arrayBuffer }).promise
+    let fullText = ""
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i)
+      const textContent = await page.getTextContent()
+      const pageText = textContent.items.map((item: any) => item.str).join(" ")
+      fullText += `\n--- Page ${i} ---\n${pageText}`
+    }
+
+    return fullText
+  } catch (error) {
+    throw new Error("Failed to extract text from PDF. Please ensure the PDF is valid.")
+  }
+}
+
+export async function pdfToText(file: File): Promise<Blob> {
+  const text = await extractTextFromPDF(file)
+  return new Blob([text], { type: "text/plain" })
+}
+
+export async function convertOfficeToBackend(file: File, format: string, apiUrl: string): Promise<Blob> {
+  const formData = new FormData()
+  formData.append("file", file)
+  formData.append("format", format)
+
+  const response = await fetch(`${apiUrl}/api/convert`, {
+    method: "POST",
+    body: formData,
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || "Conversion failed")
+  }
+
+  const data = await response.json()
+  const downloadResponse = await fetch(`${apiUrl}${data.downloadUrl}`)
+  return downloadResponse.blob()
+}
+
 export function getFileExtension(format: string): string {
   const parts = format.split("-to-")
   return parts[1] || "bin"
